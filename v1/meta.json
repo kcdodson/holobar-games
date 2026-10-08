@@ -1,8 +1,8 @@
 {
  "format": 1,
- "v": "2026-10-08.1ce6cc39c2",
- "hash": "1ce6cc39c2",
- "updated": "2026-10-08T12:11:26.473Z",
+ "v": "2026-10-08.88abba4b90",
+ "hash": "88abba4b90",
+ "updated": "2026-10-08T12:38:57.495Z",
  "count": 20000,
  "coverBase": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/",
  "coverNote": "cover = coverBase + appid + \"/\" + cover; when absent use https://cdn.cloudflare.steamstatic.com/steam/apps/<appid>/library_600x900.jpg",
