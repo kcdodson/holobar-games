@@ -1,0 +1,69 @@
+{
+ "format": 1,
+ "v": "2026-10-08.1ce6cc39c2",
+ "hash": "1ce6cc39c2",
+ "updated": "2026-10-08T12:11:26.473Z",
+ "count": 20000,
+ "coverBase": "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/",
+ "coverNote": "cover = coverBase + appid + \"/\" + cover; when absent use https://cdn.cloudflare.steamstatic.com/steam/apps/<appid>/library_600x900.jpg",
+ "ids": {
+  "shard": "appid % 16 as hex",
+  "files": [
+   "0",
+   "1",
+   "2",
+   "3",
+   "4",
+   "5",
+   "6",
+   "7",
+   "8",
+   "9",
+   "a",
+   "b",
+   "c",
+   "d",
+   "e",
+   "f"
+  ]
+ },
+ "names": {
+  "shard": "first char of canon(name), digits -> 0",
+  "files": [
+   "0",
+   "a",
+   "b",
+   "c",
+   "d",
+   "e",
+   "f",
+   "g",
+   "h",
+   "i",
+   "j",
+   "k",
+   "l",
+   "m",
+   "n",
+   "o",
+   "p",
+   "q",
+   "r",
+   "s",
+   "t",
+   "u",
+   "v",
+   "w",
+   "x",
+   "y",
+   "z"
+  ]
+ },
+ "normalize": "lowercase; drop (R)(TM)(C); & -> and; drop apostrophes; non [a-z0-9] -> space; canon also drops a leading \"the\" and turns roman numerals II-XVI (not first word) into digits",
+ "sources": [
+  "SteamSpy API (steamspy.com) - popularity / owners ranking",
+  "Steam Web API IStoreBrowseService/GetItems - current names, item type, cover asset paths",
+  "Steam charts: ISteamChartsService/GetMostPlayedGames + store search top sellers / popular new releases - recent hits"
+ ],
+ "unofficial": "Unofficial index of public data. Not affiliated with Valve or SteamSpy."
+}

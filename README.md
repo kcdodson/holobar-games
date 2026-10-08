@@ -34,6 +34,7 @@ GitHub Pages sends `Access-Control-Allow-Origin: *` and gzip, so browsers can fe
 
 - **[SteamSpy API](https://steamspy.com/api.php)** (`request=all`, pages sorted by owners) for popularity. Its stated limit for `all` is 1 request per 60 s; the build waits 61 s between pages. Data by SteamSpy.
 - **Steam Web API** (public, no key): `IStoreBrowseService/GetItems` for the current store name, the item type (only games are kept; demos, DLC, software/tools and soundtracks are dropped) and cover asset paths; `ISteamChartsService/GetMostPlayedGames` so currently hot games are always included. About 100 batched requests per run, spaced out.
+- **Steam store search lists** (`store.steampowered.com/search/results/?json=1`, filters `topsellers` (1,000) and `popularnew` (500)): recent hits SteamSpy hasn't ranked yet. 15 requests per run, 1.5 s apart.
 - `data/aliases.json`: hand-curated short names.
 
 (Steam's old `ISteamApps/GetAppList/v2` no longer answers, and the store `appdetails` endpoint is limited to roughly 200 requests per 5 minutes. `GetItems` returns the same names and asset paths for 250 apps per request.)
@@ -44,7 +45,7 @@ Game names, artwork and trademarks belong to their owners. This project is not a
 
 `node build/build.mjs` (Node 20+, no dependencies):
 
-1. Reads SteamSpy pages (`SPY_PAGES`, default 25 ≈ 25,000 apps) plus the most-played chart and the alias targets.
+1. Reads SteamSpy pages (`SPY_PAGES`, default 25 ≈ 25,000 apps), plus the most-played chart, the store's top sellers / popular new releases, and the alias targets (these are always kept).
 2. Looks up all of them with `GetItems`, keeps type-0 games (minus obvious test servers, benchmarks and soundtracks), ranks them by owners, then reviews, then players, and keeps the top `TARGET` (20,000).
 3. Writes the shards. If a source fails, games from the previous build keep their last good name and cover; the build refuses to write if the result is tiny or shrank by more than 30 %.
 

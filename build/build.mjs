@@ -103,6 +103,20 @@ async function mostPlayed() {
     return ((j.response && j.response.ranks) || []).map((r) => +r.appid).filter(Boolean);
   } catch (e) { log('most played failed:', e.message); return []; }
 }
+// Steam store search lists (top sellers, popular new releases): catches recent hits SteamSpy hasn't ranked yet
+async function storeSearch(filter, total) {
+  const ids = [];
+  for (let start = 0; start < total; start += 100) {
+    try {
+      const j = await get('https://store.steampowered.com/search/results/?json=1&category1=998&filter=' + filter + '&start=' + start + '&count=100', { tries: 2, timeout: 30000 });
+      const got = ((j && j.items) || []).map((i) => { const m = /\/apps\/(\d+)\//.exec(i.logo || ''); return m ? +m[1] : 0; }).filter(Boolean);
+      if (!got.length) break;
+      ids.push(...got);
+    } catch (e) { log('store search', filter, start, 'failed:', e.message); break; }
+    await sleep(1500);
+  }
+  return [...new Set(ids)];
+}
 async function storeItems(ids) {
   const out = new Map(); let failed = 0;
   for (let i = 0; i < ids.length; i += 250) {
@@ -132,8 +146,10 @@ async function main() {
   const aliasIds = [...new Set(Object.values(aliasSrc).map(Number))];
   log('previous dataset:', prev.size, 'games');
 
-  const [{ apps, okPages }, top] = [await steamSpy(), await mostPlayed()];
-  log('SteamSpy:', okPages, '/', SPY_PAGES, 'pages,', apps.size, 'apps; most played:', top.length);
+  const [{ apps, okPages }, played, sellers, popNew] = [await steamSpy(), await mostPlayed(), await storeSearch('topsellers', 1000), await storeSearch('popularnew', 500)];
+  // interleave the charts so each list's leaders come first
+  const top = []; for (let i = 0; i < Math.max(played.length, sellers.length, popNew.length); i++) for (const l of [played, sellers, popNew]) if (l[i] && !top.includes(l[i])) top.push(l[i]);
+  log('SteamSpy:', okPages, '/', SPY_PAGES, 'pages,', apps.size, 'apps; most played:', played.length, '; top sellers:', sellers.length, '; popular new:', popNew.length);
   const spyOk = okPages >= Math.ceil(SPY_PAGES * 0.8);
   if (!spyOk) log('SteamSpy mostly unavailable: keeping the previous ranking');
 
@@ -149,7 +165,7 @@ async function main() {
   const seen = new Set(); const candidates = [];
   for (const id of [...front, ...ranked]) if (!seen.has(id)) { seen.add(id); candidates.push(id); }
   const rankOf = new Map(); ranked.forEach((id, i) => rankOf.set(id, i));
-  top.forEach((id, i) => { if (!rankOf.has(id) || rankOf.get(id) > i * 10) rankOf.set(id, Math.min(rankOf.get(id) ?? 1e9, i * 10)); });
+  top.forEach((id, i) => rankOf.set(id, Math.min(rankOf.get(id) ?? 1e9, i * 8)));   // chart position ~ popularity for games SteamSpy ranks low
 
   const { items, failed } = await storeItems(candidates);
   log('GetItems:', items.size, 'answers,', failed, 'failed');
@@ -204,7 +220,7 @@ async function main() {
     coverBase: COVER_BASE, coverNote: 'cover = coverBase + appid + "/" + cover; when absent use https://cdn.cloudflare.steamstatic.com/steam/apps/<appid>/library_600x900.jpg',
     ids: { shard: 'appid % 16 as hex', files: Object.keys(ids) }, names: { shard: 'first char of canon(name), digits -> 0', files: Object.keys(names).sort() },
     normalize: 'lowercase; drop (R)(TM)(C); & -> and; drop apostrophes; non [a-z0-9] -> space; canon also drops a leading "the" and turns roman numerals II-XVI (not first word) into digits',
-    sources: ['SteamSpy API (steamspy.com) - popularity / owners ranking', 'Steam Web API IStoreBrowseService/GetItems + ISteamChartsService/GetMostPlayedGames - current names, item type, cover asset paths'],
+    sources: ['SteamSpy API (steamspy.com) - popularity / owners ranking', 'Steam Web API IStoreBrowseService/GetItems - current names, item type, cover asset paths', 'Steam charts: ISteamChartsService/GetMostPlayedGames + store search top sellers / popular new releases - recent hits'],
     unofficial: 'Unofficial index of public data. Not affiliated with Valve or SteamSpy.'
   };
   if (process.env.DRY) { log('DRY run: would write', final.length, 'games, v', meta.v); return; }
