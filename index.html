@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; connect-src 'self'; img-src https://shared.akamai.steamstatic.com https://cdn.cloudflare.steamstatic.com">
+<title>HoloBar games index</title>
+<style>
+ body{margin:0;background:#0a0614;color:#efeaff;font:15px/1.55 system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif}
+ .w{max-width:760px;margin:0 auto;padding:36px 20px}
+ h1{margin:0 0 4px;font-size:28px}h1 b{background:linear-gradient(90deg,#ff4fd8,#3ef0ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+ p,li{color:#d8d0f2}a{color:#3ef0ff}code{background:rgba(157,107,255,.16);padding:1px 6px;border-radius:6px;font-size:13px}
+ .card{background:rgba(22,12,44,.82);border:1px solid rgba(160,120,255,.28);border-radius:14px;padding:16px 18px;margin:16px 0}
+ input{width:100%;box-sizing:border-box;padding:10px 12px;border-radius:10px;border:1px solid rgba(157,107,255,.4);background:#08041a;color:#efeaff;font:14px ui-monospace,Menlo,Consolas,monospace}
+ .r{display:flex;gap:12px;align-items:center;margin-top:12px}.r img{width:60px;height:90px;object-fit:cover;border-radius:6px;background:#1a1030}
+ small{color:#a99fc9}
+</style></head><body><div class="w">
+<h1><b>HoloBar</b> games index</h1>
+<p>An unofficial, weekly-updated index of popular Steam games (name, App ID, cover path) for the HoloBar stream bar. Static JSON under <a href="v1/meta.json"><code>/v1/</code></a>.
+Data: <a href="https://steamspy.com/">SteamSpy</a> (popularity) and the public Steam Web API (names, cover paths). Not affiliated with Valve or SteamSpy. <a href="https://github.com/kcdodson/holobar-games">Source + docs</a>.</p>
+<div class="card"><div id="meta"><small>Loading…</small></div></div>
+<div class="card"><label for="q"><b>Try it</b> <small>(App ID, store link or name)</small></label>
+<input id="q" placeholder="e.g. 3527290, peak, hades 2" autocomplete="off"><div id="out"></div></div>
+</div>
+<script>
+(function(){
+ var meta=null,cache={};
+ function norm(s){return String(s||'').toLowerCase().replace(/[\u00ae\u2122\u00a9]/g,'').replace(/&/g,' and ').replace(/['\u2019`]/g,'').replace(/[^a-z0-9]+/g,' ').replace(/\s+/g,' ').trim();}
+ var R={ii:'2',iii:'3',iv:'4',vi:'6',vii:'7',viii:'8',ix:'9',x:'10',xi:'11',xii:'12',xiii:'13',xiv:'14',xv:'15',xvi:'16'};
+ function canon(s){var w=norm(s).split(' ').filter(Boolean);if(w.length>1&&w[0]==='the')w.shift();return w.map(function(t,i){return i>0&&R[t]?R[t]:t;}).join(' ');}
+ function get(p){if(!cache[p])cache[p]=fetch('v1/'+p+'?v='+(meta?meta.v:'')).then(function(r){if(!r.ok)throw 0;return r.json();});return cache[p];}
+ function esc(s){return String(s).replace(/[&<>"]/g,function(c){return'&#'+c.charCodeAt(0)+';';});}
+ function show(id,name,cover){var src=cover?meta.coverBase+id+'/'+cover:'https://cdn.cloudflare.steamstatic.com/steam/apps/'+id+'/library_600x900.jpg';
+  document.getElementById('out').innerHTML='<div class="r"><img alt="" src="'+esc(src)+'"><div><b>'+esc(name)+'</b><br><small>App ID '+id+'</small></div></div>';}
+ function none(){document.getElementById('out').innerHTML='<p><small>No match.</small></p>';}
+ fetch('v1/meta.json',{cache:'no-cache'}).then(function(r){return r.json();}).then(function(m){meta=m;
+  document.getElementById('meta').innerHTML='<b>'+m.count.toLocaleString()+'</b> games · version <code>'+esc(m.v)+'</code> · updated '+esc(new Date(m.updated).toLocaleString());});
+ var t=0;document.getElementById('q').addEventListener('input',function(){var v=this.value.trim();clearTimeout(t);t=setTimeout(function(){look(v);},250);});
+ function look(v){if(!meta||!v){document.getElementById('out').innerHTML='';return;}
+  var m=/^(\d{1,9})$/.exec(v)||/\/app\/(\d{1,9})/.exec(v);
+  if(m){var id=+m[1];get('ids/'+(id%16).toString(16)+'.json').then(function(d){var e=d[id];if(!e)return none();show(id,Array.isArray(e)?e[0]:e,Array.isArray(e)?e[1]:'');},none);return;}
+  var n=norm(v),c=canon(v),ch=c.charAt(0);ch=/[a-z]/.test(ch)?ch:(/[0-9]/.test(ch)?'0':'_');
+  Promise.all([get('names/'+ch+'.json').catch(function(){return[];}),get('aliases.json').catch(function(){return{};})]).then(function(r){
+   var L=r[0],i,e;for(i=0;i<L.length;i++)if(norm(L[i][1])===n)return show(L[i][0],L[i][1],L[i][2]);
+   for(i=0;i<L.length;i++)if(canon(L[i][1])===c)return show(L[i][0],L[i][1],L[i][2]);
+   var a=r[1][n]||r[1][c];if(a)return show(a[0],a[1],a[2]);
+   if(c.length>=3)for(i=0;i<L.length;i++){e=canon(L[i][1]);if(e.indexOf(c+' ')===0&&c.length/e.length>=0.4)return show(L[i][0],L[i][1],L[i][2]);}
+   none();});}
+})();
+</script></body></html>
